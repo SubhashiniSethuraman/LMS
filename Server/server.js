@@ -9,7 +9,7 @@ const app = express()
 
 //Connect to database
 await connectDB()
-
+console.log(process.env.MONGODB_URI);
 //Middlewares
 app.use(cors())
 
