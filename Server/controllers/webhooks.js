@@ -1,4 +1,4 @@
-// import { Webhook } from "svix";
+import { Webhook } from "svix";
 import { getDB } from "../configs/mongodb.js";
 import { userSchema } from "../models/userModel.js"; // Adjust the path if needed
 
