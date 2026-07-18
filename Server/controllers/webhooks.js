@@ -1,11 +1,12 @@
-import { Webhook } from "svix";
+// import { Webhook } from "svix";
 import { getDB } from "../configs/mongodb.js";
+import { userSchema } from "../models/userModel.js"; // Adjust the path if needed
 
 // Manage Clerk Users with MongoDB
 export const clerkWebhooks = async (req, res) => {
-    try {
-        const db = getDB();
+    const db = getDB();
 
+    try {
         // Verify Clerk Webhook
         const webhook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
@@ -17,8 +18,6 @@ export const clerkWebhooks = async (req, res) => {
 
         const { data, type } = req.body;
 
-        console.log("Webhook Event:", type);
-
         switch (type) {
 
             // =========================
@@ -26,24 +25,40 @@ export const clerkWebhooks = async (req, res) => {
             // =========================
             case "user.created": {
 
-                console.log("Received User:", data);
-
                 const userData = {
                     _id: data.id,
-                    email: data.email_addresses[0].email_address,
                     name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+                    email: data.email_addresses[0].email_address,
                     imageUrl: data.image_url,
                 };
 
-                console.log("Inserting user...");
+                // Validate data
+                const { error, value } = userSchema.validate(userData);
 
-                await db.collection("users").insertOne(userData);
+                if (error) {
+                    return res.status(400).json({
+                        success: false,
+                        message: error.message,
+                    });
+                }
 
-                console.log("User inserted successfully.");
+                // Check if user already exists
+                const userExists = await db.collection("users").findOne({
+                    _id: value._id,
+                });
 
-                return res.status(200).json({
+                if (userExists) {
+                    return res.status(409).json({
+                        success: false,
+                        message: "User already exists",
+                    });
+                }
+
+                await db.collection("users").insertOne(value);
+
+                return res.status(201).json({
                     success: true,
-                    message: "User created",
+                    message: "User created successfully",
                 });
             }
 
@@ -53,8 +68,8 @@ export const clerkWebhooks = async (req, res) => {
             case "user.updated": {
 
                 const userData = {
-                    email: data.email_addresses[0].email_address,
                     name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+                    email: data.email_addresses[0].email_address,
                     imageUrl: data.image_url,
                 };
 
@@ -63,11 +78,9 @@ export const clerkWebhooks = async (req, res) => {
                     { $set: userData }
                 );
 
-                console.log("User updated.");
-
                 return res.status(200).json({
                     success: true,
-                    message: "User updated",
+                    message: "User updated successfully",
                 });
             }
 
@@ -80,28 +93,20 @@ export const clerkWebhooks = async (req, res) => {
                     _id: data.id,
                 });
 
-                console.log("User deleted.");
-
                 return res.status(200).json({
                     success: true,
-                    message: "User deleted",
+                    message: "User deleted successfully",
                 });
             }
 
-            // =========================
-            // Other Events
-            // =========================
             default:
-                console.log(`Ignored webhook event: ${type}`);
-
                 return res.status(200).json({
                     success: true,
-                    message: "Event ignored",
+                    message: `Ignored event: ${type}`,
                 });
         }
 
     } catch (error) {
-
         console.error("Webhook Error:", error);
 
         return res.status(500).json({
