@@ -5,16 +5,36 @@ import Loading from '../../components/student/Loading'
 
 const Dashboard = () => {
   
-  const { currency } = useContext(AppContext)
+  const { currency, URL, getToken, isEducator } = useContext(AppContext)
   const [ dashboardData, setDashboardData ] = useState(null)
 
   const fetchDashboardData = async () => {
-    setDashboardData(dummyDashboardData)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${URL}/educator/dashboard`, {
+        method: 'GET',
+        headers: {
+          "Content-type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      })
+
+      const data = await res.json()
+      if(res.status === 200) {
+        setDashboardData(data.dashboardData)
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    }
   }
 
   useEffect(() => {
-    fetchDashboardData()
-  },[])
+    if(isEducator) {
+      fetchDashboardData()
+    }
+  },[isEducator])
 
   return dashboardData ? (
     <div className='min-h-screen flex flex-col items-start justify-between gap-8 md:p-8 md:pb-0 p-4 pt-8 pb-0'>

@@ -2,11 +2,16 @@ import React, { useRef, useState, useEffect, act } from 'react'
 import uniqid from 'uniqid'
 import Quill from 'quill'
 import { assets } from '../../assets/assets'
+import { useContext } from 'react'
+import { AppContext } from '../../context/AppContext'
+import { toast } from 'react-toastify'
 
 const AddCourse = () => {
 
   const quillRef = useRef(null)
   const editorRef = useRef(null)
+
+  const {URL, getToken} = useContext(AppContext)
 
   const [ courseTitle, setCourseTitle ] = useState('')
   const [ coursePrice, setCoursePrice ] = useState(0)
@@ -81,8 +86,49 @@ const AddCourse = () => {
     })
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async(e) => {
+    try {
+      e.preventDefault()
+      if(!image) {
+        toast.error('Thumbnail not selected')
+      }
+
+      const courseData = {
+        courseTitle,
+        courseDescription: quillRef.current.root.innerHTML,
+        coursePrice: Number(coursePrice),
+        discount: Number(discount),
+        courseContent: chapters
+      }
+
+      const formData = new FormData()
+      formData.append('courseData', JSON.stringify(courseData))
+      formData.append('image', image)
+
+      const token = await getToken()
+      const res = await fetch(`${URL}/educator/add-course`, {
+        method: 'POST',
+        headers: {
+            "Authorization": `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      const data = await res.json()
+      if(res.status === 200) {
+        toast.success(data.message)
+        setCourseTitle('')
+        setCoursePrice(0)
+        setDiscount(0)
+        setImage(null)
+        setChapters([])
+        quillRef.current.root.innerHTML = ''
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    }
   }
 
   useEffect(() => {
