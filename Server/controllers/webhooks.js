@@ -235,7 +235,7 @@ export const stripeWebhooks = async (request, response) => {
             if (!userData || !courseData) break;
 
             // Add student to course
-            await db.collection("courses").updateOne(
+            const updatedResult = await db.collection("courses").updateOne(
                 { _id: courseData._id },
                 {
                     $push: {
@@ -243,6 +243,13 @@ export const stripeWebhooks = async (request, response) => {
                     }
                 }
             );
+            console.log(updatedResult);
+
+            const updatedUser = await db.collection("users").findOne({
+                _id: userData._id
+            });
+
+            console.log(updatedUser);
 
             // Add course to user
             await db.collection("users").updateOne(
