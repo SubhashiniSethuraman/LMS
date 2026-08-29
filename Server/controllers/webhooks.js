@@ -175,24 +175,37 @@ export const clerkWebhooks = async (req, res) => {
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const stripeWebhooks = async (request, response) => {
+     console.log("========== WEBHOOK HIT ==========");
     const db = getDB();
 
     const sig = request.headers["stripe-signature"];
+    console.log("Signature:", sig);
 
     let event;
 
     try {
+
+        console.log("Stripe Secret Exists:", !!process.env.STRIPE_SECRET_KEY);
+        console.log("Webhook Secret Exists:", !!process.env.STRIPE_WEBHOOK_SECRET);
         event = stripeInstance.webhooks.constructEvent(
             request.body,
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
         );
+
+        console.log("Webhook verified");
+        console.log("Event type:", event.type);
+
     } catch (err) {
+        console.log("Webhook verification failed");
+        console.log(err.message);
+
         return response
             .status(400)
             .send(`Webhook Error: ${err.message}`);
     }
 
+    console.log("Processing event...");
     switch (event.type) {
 
         case "payment_intent.succeeded": {
@@ -216,7 +229,7 @@ export const stripeWebhooks = async (request, response) => {
             });
 
             const courseData = await db.collection("courses").findOne({
-                _id: purchaseData.courseId
+                _id: new ObjectId(purchaseData.courseId)
             });
 
             if (!userData || !courseData) break;
@@ -252,6 +265,18 @@ export const stripeWebhooks = async (request, response) => {
                 }
             );
 
+            console.log("Payment succeeded");
+
+console.log("Session:", session.data[0]);
+
+console.log("Purchase ID:", purchaseId);
+
+console.log("Purchase:", purchaseData);
+
+console.log("User:", userData);
+
+console.log("Course:", courseData);
+
             break;
         }
 
@@ -285,4 +310,6 @@ export const stripeWebhooks = async (request, response) => {
     }
 
     response.json({ received: true });
+
+    console.log("Webhook finished");
 };

@@ -1,4 +1,6 @@
+import { ObjectId } from "mongodb"
 import { getDB } from "../configs/mongodb.js"
+import Stripe from 'stripe'
 
 export const getUserData = async (req, res) => {
     try {
@@ -90,7 +92,7 @@ export const purchaseCourse = async (req, res) => {
                 product_data: {
                     name: courseData.courseTitle,
                 },
-                unit_amount: Math.floor(amount) * 100
+                unit_amount: Math.floor(purchaseData.amount) * 100
             },
             quantity: 1
         }]

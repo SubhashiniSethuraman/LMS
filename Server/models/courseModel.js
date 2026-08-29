@@ -13,13 +13,14 @@ export const chapterSchema = Joi.object({
     chapterId: Joi.string().required(),
     chapterOrder: Joi.number().required(),
     chapterTitle: Joi.string().trim().required(),
-    chapterContent: Joi.array().items(lectureSchema).default([])
+    chapterContent: Joi.array().items(lectureSchema).default([]),
+    collapsed: Joi.boolean().default(false)
 })
 
 export const courseSchema = Joi.object({
     courseTitle: Joi.string().trim().required(),
     courseDescription: Joi.string().trim().required(),
-    courseThumbNail: Joi.string().uri().required(),
+    courseThumbnail: Joi.string().uri().required(),
     coursePrice: Joi.number().min(0).required(),
     isPublished: Joi.boolean().default(true),
     discount: Joi.number().min(0).max(100).required(),
