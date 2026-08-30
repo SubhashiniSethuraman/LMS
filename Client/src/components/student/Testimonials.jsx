@@ -1,34 +1,63 @@
 import React from 'react'
-import { assets, dummyTestimonial } from '../../assets/assets'
+import { dummyTestimonial } from '../../assets/assets'
+import { Star, Quote } from 'lucide-react'
 
 const Testimonials = () => {
   return (
-    <div className='pb-14 px-8 md:px-0'>
-        <h2 className='text-3xl font-medium text-gray-800'>Testimonials</h2>
-        <p className='md:text-base text-gray-500 mt-3'>Hear from our learners as they share their journeys of transformation, success, and how our <br /> platform has made a difference in their lives.</p>
-        <div className='grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-8 mt-14'>
-          {dummyTestimonial.map((testimonial, index)=> (
-            <div key={index} className='text-sm text-left border border-gray-500/30 pb-6 rounded-lg bg-white shadow-[0px_4px_15px_0px] shadow-black/5 overflow-hidden'>
-              <div className='flex item-center gap-4 px-5 py-4 bg-gray-500/10'>
-                <img className='h-12 w-12 rounded-full' src={testimonial.image} alt={testimonial.name} />
-                <div>
-                  <h1 className='text-lg font-medium text-gray-800'>{testimonial.name}</h1>
-                  <p className='text-gray-800/80'>{testimonial.role}</p>
-                </div>
-              </div>
-              <div className='p-5 pb-7'>
-                  <div className='flex gap-0.5'>
-                    {[...Array(5)].map((_, i) => (
-                      <img className='h-5' key={i} src={i<Math.floor(testimonial.rating) ? assets.star : assets.star_blank} alt="star" />
-                    ))}
-                  </div>
-                  <p className='text-gray-500 mt-5'>{testimonial.feedback}</p>
-                </div>
-                <a href='#' className='text-blue-500 underline px-5'>Read More</a>
+    <section className='w-full py-16 md:px-24 px-6'>
+      {/* Header */}
+      <div className='text-center mb-12'>
+        <div className='inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3'>
+          <Quote className='w-3.5 h-3.5' />
+          Success Stories
+        </div>
+        <h2 className='text-3xl md:text-4xl font-bold text-gray-900'>What our learners say</h2>
+        <p className='text-gray-500 mt-3 max-w-2xl mx-auto'>
+          Hear from our community as they share their journeys of transformation and how our platform has made a difference.
+        </p>
+      </div>
+
+      {/* Cards grid */}
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        {dummyTestimonial.map((t, i) => (
+          <div
+            key={i}
+            className='relative flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300 overflow-hidden p-6'
+          >
+            {/* Quote mark */}
+            <div className='absolute top-5 right-5 opacity-10'>
+              <Quote className='w-10 h-10 text-emerald-600' />
             </div>
-          ))}
-        </div>    
-    </div>
+
+            {/* Stars */}
+            <div className='flex gap-0.5 mb-4'>
+              {[...Array(5)].map((_, j) => (
+                <Star
+                  key={j}
+                  className={`w-4 h-4 ${j < Math.floor(t.rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`}
+                />
+              ))}
+            </div>
+
+            {/* Feedback */}
+            <p className='text-gray-600 text-sm leading-relaxed flex-1'>"{t.feedback}"</p>
+
+            {/* Author */}
+            <div className='flex items-center gap-3 mt-6 pt-5 border-t border-gray-100'>
+              <img
+                src={t.image}
+                alt={t.name}
+                className='w-11 h-11 rounded-full object-cover ring-2 ring-emerald-200'
+              />
+              <div>
+                <p className='font-semibold text-gray-900 text-sm'>{t.name}</p>
+                <p className='text-emerald-600 text-xs font-medium'>{t.role}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

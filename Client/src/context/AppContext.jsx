@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom";
 import humanizeDuration from "humanize-duration";
 import { useAuth, useUser } from "@clerk/clerk-react"
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 export const AppContext = createContext()
 

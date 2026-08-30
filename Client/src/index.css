@@ -1,23 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @import "tailwindcss";
 
+/* ============================================
+   GREEN THEME DESIGN TOKENS
+   ============================================ */
 @theme {
+  /* Typography sizes */
   --text-course-details-heading-small: 26px;
   --text-course-details-heading-large: 36px;
-  --text-home-heading-small: 28px;
-  --text-home-heading-large: 48px;
+  --text-home-heading-small: 30px;
+  --text-home-heading-large: 52px;
   --text-default: 15px;
 
+  /* Layout */
   --spacing-section-height: 500px;
-
   --container-course-card: 424px;
 
-  --shadow-custom-card: 0px 4px 15px 2px rgba(0, 0, 0, 0.1);
+  /* Shadows */
+  --shadow-custom-card: 0px 4px 20px 4px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0px 8px 30px 4px rgba(16, 185, 129, 0.15);
+
+  /* Green palette */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
 }
 
+/* CSS Variables for shadcn/ui compatibility */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --primary: 160 84% 39%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 160 84% 95%;
+  --secondary-foreground: 160 84% 20%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 160 84% 95%;
+  --accent-foreground: 160 84% 20%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 160 84% 39%;
+  --radius: 0.5rem;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
 * {
-  font-family: Outfit;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
 }
 
 html {
@@ -25,12 +67,127 @@ html {
 }
 
 ::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #a7f3d0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
 }
 
+/* ============================================
+   ANIMATION KEYFRAMES
+   ============================================ */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out;
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}
+
+/* ============================================
+   RADIX UI DATA STATE ANIMATIONS
+   ============================================ */
+@keyframes fade-in-0 {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-out-0 {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes zoom-in-95 {
+  from { transform: scale(0.95); }
+  to { transform: scale(1); }
+}
+@keyframes zoom-out-95 {
+  from { transform: scale(1); }
+  to { transform: scale(0.95); }
+}
+@keyframes slide-in-from-top {
+  from { transform: translateY(-10px); }
+  to { transform: translateY(0); }
+}
+@keyframes slide-out-to-top {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
+}
+
+.data-\[state\=open\]\:animate-in[data-state=open] {
+  animation-duration: 200ms;
+  animation-fill-mode: both;
+}
+.data-\[state\=closed\]\:animate-out[data-state=closed] {
+  animation-duration: 150ms;
+  animation-fill-mode: both;
+}
+.data-\[state\=open\]\:fade-in-0[data-state=open] {
+  animation-name: fade-in-0;
+}
+.data-\[state\=closed\]\:fade-out-0[data-state=closed] {
+  animation-name: fade-out-0;
+}
+.data-\[state\=open\]\:zoom-in-95[data-state=open] {
+  animation-name: zoom-in-95;
+}
+.data-\[state\=closed\]\:zoom-out-95[data-state=closed] {
+  animation-name: zoom-out-95;
+}
+.data-\[state\=open\]\:slide-in-from-top-\[48\%\][data-state=open] {
+  animation-name: slide-in-from-top;
+}
+.data-\[state\=closed\]\:slide-out-to-top-\[48\%\][data-state=closed] {
+  animation-name: slide-out-to-top;
+}
+.data-\[state\=open\]\:slide-in-from-left-1\/2[data-state=open] {
+  /* horizontal entry handled by top animation combined */
+}
+.data-\[state\=closed\]\:slide-out-to-left-1\/2[data-state=closed] {
+  /* horizontal exit */
+}
+
+/* ============================================
+   RICH TEXT (Quill editor output)
+   ============================================ */
 .rich-text {
   font-size: 15px;
-  color: #7A7B7D;
+  color: #4b5563;
+  line-height: 1.8;
 }
 
 .rich-text p {
@@ -40,47 +197,48 @@ html {
 .rich-text h1 {
   font-size: 36px;
   font-weight: 800;
-  color: #252525;
+  color: #111827;
   margin: 32px 0;
 }
 
 .rich-text h2 {
   font-size: 22px;
   font-weight: 700;
-  color: #252525;
+  color: #111827;
   margin: 24px 0;
 }
 
 .rich-text h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #333333;
+  color: #1f2937;
   margin: 20px 0;
 }
 
 .rich-text h4 {
   font-size: 16px;
   font-weight: 500;
-  color: #444444;
+  color: #374151;
   margin: 16px 0;
 }
 
 .rich-text h5 {
   font-size: 14px;
   font-weight: 400;
-  color: #555555;
+  color: #4b5563;
   margin: 12px 0;
 }
 
 .rich-text h6 {
   font-size: 12px;
   font-weight: 400;
-  color: #666666;
+  color: #6b7280;
   margin: 8px 0;
 }
 
 .rich-text strong {
   font-weight: 700;
+  color: #111827;
 }
 
 .rich-text ol {
@@ -95,4 +253,78 @@ html {
 
 .rich-text li {
   margin-bottom: 8px;
+}
+
+.rich-text a {
+  color: #059669;
+  text-decoration: underline;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.green-gradient {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+}
+
+.hero-gradient {
+  background: linear-gradient(160deg, #f0fdf4 0%, #dcfce7 40%, #ecfdf5 80%, #ffffff 100%);
+}
+
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.15);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Quill editor fix */
+.ql-toolbar {
+  border-radius: 8px 8px 0 0 !important;
+  border-color: #d1d5db !important;
+}
+.ql-container {
+  border-radius: 0 0 8px 8px !important;
+  border-color: #d1d5db !important;
+  min-height: 120px;
+}
+.ql-editor:focus {
+  outline: none;
+}
+
+/* ============================================
+   DIALOG / MODAL CENTERING FIX
+   ============================================ */
+[role="dialog"] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  translate: -50% -50% !important;
+  z-index: 50;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Keep animations working with the correct transform origin */
+[role="dialog"][data-state="open"] {
+  animation: dialog-in 200ms ease;
+}
+[role="dialog"][data-state="closed"] {
+  animation: dialog-out 150ms ease;
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes dialog-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
 }

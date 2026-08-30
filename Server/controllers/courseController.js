@@ -6,8 +6,6 @@ export const getAllCourses = async (req, res) => {
     try {
         const db = getDB();
 
-        //Course document->Filter ($match)->Attach educator information ($lookup) to course data->
-        //Convert educator array → object ($unwind)->Remove unwanted fields ($project)->Return final document
         const courses = await db.collection("courses").aggregate([
             {
                 $match: {
@@ -33,9 +31,9 @@ export const getAllCourses = async (req, res) => {
             }
         ]).toArray()
 
-        res.json({success: true, courses})
+        return res.status(200).json({ success: true, courses })
     } catch (error) {
-        return res.json({ success: false, message: error.message })
+        return res.status(500).json({ success: false, message: error.message })
     }
 }
 
@@ -43,7 +41,7 @@ export const getAllCourses = async (req, res) => {
 export const getCourseById = async (req, res) => {
     try {
         const db = getDB();
-        const {id} = req.params;
+        const { id } = req.params;
 
         const result = await db.collection("courses").aggregate([
             {
@@ -52,7 +50,7 @@ export const getCourseById = async (req, res) => {
                 }
             },
             {
-                $lookup:{
+                $lookup: {
                     from: "users",
                     localField: "educator",
                     foreignField: "_id",
@@ -66,21 +64,21 @@ export const getCourseById = async (req, res) => {
 
         const courseData = result[0];
 
-        if(!courseData) {
+        if (!courseData) {
             return res.status(404).json({ success: false, message: "Course not found" })
         }
 
         //Remove lectureUrl if isPreviewFree is false
         courseData.courseContent.forEach(chapter => {
             chapter.chapterContent.forEach(lecture => {
-                if(!lecture.isPreviewFree) {
+                if (!lecture.isPreviewFree) {
                     lecture.lectureUrl = ""
                 }
             })
         })
 
-        res.json({ success: true, courseData })
+        return res.status(200).json({ success: true, courseData })
     } catch (error) {
-        return res.json({ success: false, message: error.message })
+        return res.status(500).json({ success: false, message: error.message })
     }
 }

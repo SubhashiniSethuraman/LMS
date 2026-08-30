@@ -1,28 +1,14 @@
 import React from 'react'
-import { assets } from '../../assets/assets'
+import { GraduationCap } from 'lucide-react'
 
 const Footer = () => {
   return (
-    <footer className='flex md:flex-row flex-col-reverse items-center justify-between text-left w-full px-8 border-t'>
-      <div className='flex items-center gap-4'>
-        <img className='hidden md:block w-20' src={assets.logo} alt='logo' />
-          <div className='hidden md:block h-7 w-px bg-gray-500/60'>
-          </div>
-          <p className='py-4 text-center text-xs md:text-sm text-gray-500'>
-            Copyright 2026 @ Edemy. All Right Reserved.
-          </p>
-      </div>
-
-      <div className='flex items-center gap-3 max-md:mt-4'>
-        <a href='#'>
-          <img src={assets.facebook_icon} alt='facebook_icon'/>
-        </a>
-        <a href='#'>
-          <img src={assets.twitter_icon} alt='twitter_icon'/>
-        </a>
-        <a href='#'>
-          <img src={assets.instagram_icon} alt='instagram_icon'/>
-        </a>
+    <footer className='border-t border-gray-200 py-4 px-8 text-center bg-white'>
+      <div className='flex items-center justify-center gap-2 text-sm text-gray-400'>
+        <div className='w-5 h-5 bg-emerald-600 rounded flex items-center justify-center'>
+          <GraduationCap className='w-3 h-3 text-white' />
+        </div>
+        <span>© 2026 <span className='font-semibold text-emerald-600'>Eduemy</span>. All rights reserved.</span>
       </div>
     </footer>
   )

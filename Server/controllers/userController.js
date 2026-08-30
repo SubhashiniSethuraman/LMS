@@ -1,19 +1,45 @@
 import { ObjectId } from "mongodb"
 import { getDB } from "../configs/mongodb.js"
 import Stripe from 'stripe'
+import Joi from 'joi'
+
+// ─── Validation schemas ────────────────────────────────────────────────────────
+
+const courseIdSchema = Joi.object({
+    courseId: Joi.string().trim().required().messages({
+        'string.empty': 'courseId is required',
+        'any.required': 'courseId is required'
+    })
+})
+
+const progressSchema = Joi.object({
+    courseId: Joi.string().trim().required(),
+    lectureId: Joi.string().trim().required()
+})
+
+const ratingSchema = Joi.object({
+    courseId: Joi.string().trim().required(),
+    rating: Joi.number().min(1).max(5).required().messages({
+        'number.min': 'Rating must be between 1 and 5',
+        'number.max': 'Rating must be between 1 and 5',
+        'any.required': 'rating is required'
+    })
+})
+
+// ─── Controllers ───────────────────────────────────────────────────────────────
 
 export const getUserData = async (req, res) => {
     try {
         const db = getDB()
         const { userId } = req.auth()
 
-        const user = await db.collection("users").findOne({ _id: userId})
+        const user = await db.collection("users").findOne({ _id: userId })
 
-        if(!user) {
-            return res.status(404).json({ success: false, message: 'User not found'})
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' })
         }
 
-        return res.status(200).json({ success: true, user})
+        return res.status(200).json({ success: true, user })
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message })
     }
@@ -27,67 +53,75 @@ export const userEnrolledCourses = async (req, res) => {
 
         const result = await db.collection("users").aggregate([
             {
-                $match: {
-                    _id: userId
-                }
+                $match: { _id: userId }
             },
             {
                 $lookup: {
-                    from: "courses", //Which collection should MongoDB search?
-                    localField: "enrolledCourses", //Which field from the current document should MongoDB use to search?
-                    foreignField: "_id", //Which field in the courses collection should be compared?
-                    as: "enrolledCourses" //Where should MongoDB store the matched documents? inside "enrolledCourses" field
+                    from: "courses",
+                    localField: "enrolledCourses",
+                    foreignField: "_id",
+                    as: "enrolledCourses"
                 }
             }
         ]).toArray()
 
         const userData = result[0]
 
-        if(!userData) {
+        if (!userData) {
             return res.status(404).json({ success: false, message: 'User not found' })
         }
 
-        res.json({ success: true, enrolledCourses: userData.enrolledCourses })
+        return res.status(200).json({ success: true, enrolledCourses: userData.enrolledCourses })
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message })
+        return res.status(500).json({ success: false, message: error.message })
     }
 }
 
-
 // Purchase Course
 export const purchaseCourse = async (req, res) => {
-    try{
+    // Validate input
+    const { error, value } = courseIdSchema.validate(req.body)
+    if (error) {
+        return res.status(400).json({ success: false, message: error.details[0].message })
+    }
+
+    try {
         const db = getDB()
-        const { courseId } = req.body
+        const { courseId } = value
         const { origin } = req.headers
         const { userId } = req.auth()
 
-        const userData = await db.collection("users").findOne({_id: userId})
-        const courseData = await db.collection("courses").findOne({_id: new ObjectId(courseId)})
+        const [userData, courseData] = await Promise.all([
+            db.collection("users").findOne({ _id: userId }),
+            db.collection("courses").findOne({ _id: new ObjectId(courseId) })
+        ])
 
-        if(!userData || !courseData) {
-            return res.status(404).json({ success: false, message: 'Data not found' })
+        if (!userData) {
+            return res.status(404).json({ success: false, message: 'User not found' })
+        }
+        if (!courseData) {
+            return res.status(404).json({ success: false, message: 'Course not found' })
         }
 
+        const now = new Date().toISOString()
         const purchaseData = {
             courseId: courseData._id.toString(),
             userId,
             amount: Number(courseData.coursePrice - (courseData.discount * courseData.coursePrice) / 100).toFixed(2),
             status: 'pending',
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: now,
+            updatedAt: now
         }
 
         const result = await db.collection("purchases").insertOne(purchaseData)
 
         // Stripe Gateway Initialize
         const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY)
-        
         const currency = process.env.CURRENCY.toLowerCase()
 
         // Creating line items for Stripe
         const line_items = [{
-            price_data:{
+            price_data: {
                 currency,
                 product_data: {
                     name: courseData.courseTitle,
@@ -100,111 +134,112 @@ export const purchaseCourse = async (req, res) => {
         const session = await stripeInstance.checkout.sessions.create({
             success_url: `${origin}/loading/my-enrollments`,
             cancel_url: `${origin}/`,
-            line_items: line_items,
+            line_items,
             mode: 'payment',
             metadata: {
                 purchaseId: result.insertedId.toString()
             }
         })
 
-        res.json({ success: true, session_url: session.url })
+        return res.status(200).json({ success: true, session_url: session.url })
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message })
+        return res.status(500).json({ success: false, message: error.message })
     }
 }
 
 //Update User Course Progress
 export const updateUserCourseProgress = async (req, res) => {
+    const { error, value } = progressSchema.validate(req.body)
+    if (error) {
+        return res.status(400).json({ success: false, message: error.details[0].message })
+    }
+
     try {
-        const db = getDB();
-        const { userId } = req.auth();
-        const { courseId, lectureId } =req.body;
-        if (!courseId || !lectureId) {
-            return res.status(400).json({ success: false, message: 'Missing courseId or lectureId' })
-        }
+        const db = getDB()
+        const { userId } = req.auth()
+        const { courseId, lectureId } = value
 
-        const progressData = await db.collection("courseProgress").findOne({userId, courseId})
+        const progressData = await db.collection("courseProgress").findOne({ userId, courseId })
 
-        if(progressData) {
-            if(progressData.lectureCompleted.includes(lectureId)) {
-                return res.json({success: true, message: "Lecture Already Completed"})
+        if (progressData) {
+            if (progressData.lectureCompleted.includes(lectureId)) {
+                return res.status(200).json({ success: true, message: "Lecture Already Completed" })
             }
 
             await db.collection("courseProgress").updateOne(
+                { _id: progressData._id },
                 {
-                    _id: progressData._id
-                },
-                {
-                    $addToSet: {
-                        lectureCompleted: lectureId
-                    }
-                },
-                {
-                    upsert: true
+                    $addToSet: { lectureCompleted: lectureId },
+                    $set: { updatedAt: new Date().toISOString() }
                 }
             )
-
         } else {
+            const now = new Date().toISOString()
             await db.collection("courseProgress").insertOne({
-                userId, 
+                userId,
                 courseId,
                 lectureCompleted: [lectureId],
-                createdAt: new Date(),
-                updatedAt: new Date()
+                createdAt: now,
+                updatedAt: now
             })
         }
 
-        res.json({success: true, message: "Progress Updated"})
+        return res.status(200).json({ success: true, message: "Progress Updated" })
     } catch (error) {
-        res.status(500).json({success: false, message: error.message})
+        return res.status(500).json({ success: false, message: error.message })
     }
 }
 
 //Get User Course Progress
 export const getUserCourseProgress = async (req, res) => {
+    const { error, value } = courseIdSchema.validate(req.body)
+    if (error) {
+        return res.status(400).json({ success: false, message: error.details[0].message })
+    }
+
     try {
-        const db = getDB();
-        const { userId } = req.auth();
-        const { courseId } =req.body;
-        if (!courseId) {
-            return res.status(400).json({ success: false, message: 'Missing courseId' })
-        }
-        const progressData = await db.collection("courseProgress").findOne({userId, courseId})
+        const db = getDB()
+        const { userId } = req.auth()
+        const { courseId } = value
 
-        res.json({success: true, progressData})
+        const progressData = await db.collection("courseProgress").findOne({ userId, courseId })
 
+        return res.status(200).json({ success: true, progressData })
     } catch (error) {
-        res.status(500).json({success: false, message: error.message})
+        return res.status(500).json({ success: false, message: error.message })
     }
 }
 
 //Add User Ratings to Course
-export const  addUserRating = async (req, res) => {
+export const addUserRating = async (req, res) => {
+    const { error, value } = ratingSchema.validate(req.body)
+    if (error) {
+        return res.status(400).json({ success: false, message: error.details[0].message })
+    }
+
     try {
-        const db = getDB();
-        const { userId } = req.auth();
-        const { courseId, rating } = req.body;
+        const db = getDB()
+        const { userId } = req.auth()
+        const { courseId, rating } = value
 
-        if(!courseId || !userId || !rating || rating < 1 || rating > 5) {
-            return res.status(400).json({ success: false, message: 'Invalid Details' })
-        }
-
-        const course = await db.collection("courses").findOne({_id: new ObjectId(courseId)})
-
-        if(!course) {
+        const course = await db.collection("courses").findOne({ _id: new ObjectId(courseId) })
+        if (!course) {
             return res.status(404).json({ success: false, message: 'Course not found' })
         }
 
-        const user = await db.collection("users").findOne({_id: userId})
+        const user = await db.collection("users").findOne({ _id: userId })
+        const enrolledCoursesStrings = user?.enrolledCourses
+            ? user.enrolledCourses.map(id => id.toString())
+            : []
 
-        const enrolledCoursesStrings = user && user.enrolledCourses ? user.enrolledCourses.map(id => id.toString()) : []
-        if(!user || !enrolledCoursesStrings.includes(courseId)) {
-            return res.status(400).json({ success: false, message: 'User has not purchased this course' })
+        if (!user || !enrolledCoursesStrings.includes(courseId)) {
+            return res.status(403).json({ success: false, message: 'User has not purchased this course' })
         }
 
         const existingRatingIndex = course.courseRatings.findIndex(r => r.userId === userId)
-        //Rating already available
-        if(existingRatingIndex > -1) {
+
+        if (existingRatingIndex > -1) {
+            // Update existing rating
             await db.collection("courses").updateOne(
                 {
                     _id: course._id,
@@ -215,26 +250,21 @@ export const  addUserRating = async (req, res) => {
                         [`courseRatings.${existingRatingIndex}.rating`]: rating
                     }
                 }
-            );
+            )
         } else {
+            // Add new rating
             await db.collection("courses").updateOne(
-                {
-                    _id: course._id
-                },
+                { _id: course._id },
                 {
                     $push: {
-                        courseRatings: {
-                            userId,
-                            rating
-                        }
+                        courseRatings: { userId, rating }
                     }
                 }
-            );
+            )
         }
-        
-        return res.json({success: true, message: 'Rating Added'})
 
+        return res.status(200).json({ success: true, message: 'Rating Added' })
     } catch (error) {
-        res.status(500).json({success: false, message: error.message})
+        return res.status(500).json({ success: false, message: error.message })
     }
 }

@@ -1,13 +1,17 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../../context/AppContext'
-import { assets, dummyDashboardData } from '../../assets/assets'
-import Loading from '../../components/student/Loading'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
+import { Breadcrumb } from '../../components/ui/breadcrumb'
+import { StatCardSkeleton } from '../../components/ui/skeleton'
+import { Users, BookOpen, DollarSign, TrendingUp } from 'lucide-react'
+import StatCard from '../../components/educator/StatCard'
+import StudentsEnrolledTable from '../../components/educator/StudentsEnrolledTable'
 
 const Dashboard = () => {
-  
+
   const { currency, URL, getToken, isEducator } = useContext(AppContext)
   const [ dashboardData, setDashboardData ] = useState(null)
+  const [ loading, setLoading ] = useState(true)
 
   const fetchDashboardData = async () => {
     try {
@@ -19,87 +23,83 @@ const Dashboard = () => {
           "Authorization": `Bearer ${token}`
         }
       })
-
       const data = await res.json()
       if(res.status === 200) {
         setDashboardData(data.dashboardData)
       } else {
-        toast.error(data.message)
+        toast.error(data.message || 'Failed to load dashboard data.')
       }
     } catch (error) {
-      toast.error(error.message)
+      toast.error('Network error. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
-    if(isEducator) {
-      fetchDashboardData()
-    }
+    if(isEducator) { fetchDashboardData() }
   },[isEducator])
 
-  return dashboardData ? (
-    <div className='min-h-screen flex flex-col items-start justify-between gap-8 md:p-8 md:pb-0 p-4 pt-8 pb-0'>
-        <div className='space-y-5'>
+  const statCards = dashboardData ? [
+    {
+      icon: Users,
+      value: dashboardData.enrolledStudentsData?.length || 0,
+      label: 'Total Enrolments',
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-200',
+    },
+    {
+      icon: BookOpen,
+      value: dashboardData.totalCourses,
+      label: 'Total Courses',
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+    },
+    {
+      icon: DollarSign,
+      value: `${currency}${dashboardData.totalEarnings}`,
+      label: 'Total Earnings',
+      color: 'text-amber-600',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+    },
+  ] : []
 
-          <div className='flex flex-wrap gap-5 items-center'>
+  return (
+    <div className='p-6 md:p-8 space-y-8'>
+      <div>
+        <Breadcrumb items={[{ label: 'Dashboard' }]} className='mb-2' />
+        <h1 className='text-2xl font-bold text-gray-900'>Dashboard</h1>
+        <p className='text-gray-500 text-sm'>Your teaching overview at a glance.</p>
+      </div>
 
-              <div className='flex items-center gap-3 shadow-card border border-blue-500 p-4 w-56 rounded-md'>
-                <img src={assets.patients_icon} alt='patients_icon' />
-                <div>
-                  <p className='text-2xl font-medium text-gray-600'>{dashboardData.enrolledStudentsData.length}</p>
-                  <p className='text-base text-gray-500'>Total Enrolments</p>
-                </div>
-              </div>
+      {/* Stat cards */}
+      <div className='flex flex-wrap gap-5'>
+        {loading
+          ? [...Array(3)].map((_, i) => <StatCardSkeleton key={i} />)
+          : statCards.map((card) => (
+            <StatCard key={card.label} {...card} />
+          ))
+        }
+      </div>
 
-              <div className='flex items-center gap-3 shadow-card border border-blue-500 p-4 w-56 rounded-md'>
-                <img src={assets.appointments_icon} alt='patients_icon' />
-                <div>
-                  <p className='text-2xl font-medium text-gray-600'>{dashboardData.totalCourses}</p>
-                  <p className='text-base text-gray-500'>Total Courses</p>
-                </div>
-              </div>
-
-              <div className='flex items-center gap-3 shadow-card border border-blue-500 p-4 w-56 rounded-md'>
-                <img src={assets.earning_icon} alt='patients_icon' />
-                <div>
-                  <p className='text-2xl font-medium text-gray-600'>{currency}{dashboardData.totalEarnings}</p>
-                  <p className='text-base text-gray-500'>Total Earnings</p>
-                </div>
-              </div>
-
-          </div>
-
-          <div>
-            <h2 className='pb-4 text-lg font-medium'>Latest Enrolments</h2>
-            <div className='flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20'>
-              <table className='table-fixed md:table-auto w-full overflow-hidden'>
-                <thead className='text-gray-900 border-b border-gray-500/20 text-sm text-left'>
-                  <tr>
-                    <th className='px-4 py-3 font-semibold text-center hidden sm:table-cell'>#</th>
-                    <th className='px-4 py-3 font-semibold'>Student Name</th>
-                    <th className='px-4 py-3 font-semibold'>Course Title</th>
-                  </tr>
-                </thead>
-                <tbody className='text-sm text-gray-500'>
-                  {dashboardData.enrolledStudentsData.map((item, index) => (
-                    <tr key={index} className='border-b border-gray-500/20'>
-                      <td className='px-4 py-3 text-center hidden sm:table-cell'>{index + 1}</td>
-                      <td className='md:px-4 px-2 py-3 flex items-center space-x-3'>
-                        <img src={item.student.imageUrl} alt='Profile' className='w-9 h-9 rounded-full' />
-                        <span className='truncate'>{item.student.name}</span>
-                      </td>
-                      <td className='px-4 py-3 truncate'>{item.courseTitle}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
+      {/* Latest enrollments table */}
+      <div>
+        <div className='flex items-center gap-2 mb-4'>
+          <TrendingUp className='w-5 h-5 text-emerald-600' />
+          <h2 className='text-lg font-bold text-gray-900'>Latest Enrolments</h2>
         </div>
+        <div className='rounded-2xl border border-gray-200 overflow-hidden shadow-sm max-w-4xl'>
+          <StudentsEnrolledTable
+            enrolledStudents={dashboardData?.enrolledStudentsData}
+            loading={loading}
+            limit={5}
+          />
+        </div>
+      </div>
     </div>
-  ) : (
-    <Loading />
   )
 }
 

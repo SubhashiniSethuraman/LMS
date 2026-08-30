@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { assets } from '../../assets/assets'
+import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { Button } from '../ui/button'
 
 const SearchBar = ({data}) => {
 
@@ -13,11 +14,29 @@ const SearchBar = ({data}) => {
   }
 
   return (
-        <form onSubmit={onSearchHandler} className='max-w-xl w-full md:h-14 h-12 flex items-center bg-white border border-gray-500/20 rounded'>
-          <img src={assets.search_icon} alt='search_icon' className='md:w-auto w-10 px-3' />
-          <input onChange={e => setInput(e.target.value)} type='text' placeholder='Search for Courses' className='w-full h-full outline-none text-gray-500/80' />
-          <button type='submit' className='bg-blue-600 rounded text-white md:px-10 px-7 md:py-3 py-2 mx-1'>Search</button>
-        </form>
+    <form
+      onSubmit={onSearchHandler}
+      className='w-full flex items-center bg-white border-2 border-emerald-200 rounded-2xl shadow-md shadow-emerald-100/50 overflow-hidden transition-all duration-200 focus-within:border-emerald-500 focus-within:shadow-emerald-200'
+    >
+      <div className='pl-4 pr-2 flex items-center'>
+        <Search className='w-5 h-5 text-emerald-400' />
+      </div>
+      <input
+        onChange={e => setInput(e.target.value)}
+        value={input}
+        type='text'
+        placeholder='Search for courses, topics, or skills...'
+        className='flex-1 h-12 md:h-14 text-gray-700 text-sm md:text-base outline-none bg-transparent placeholder:text-gray-400'
+      />
+      <div className='p-1.5'>
+        <Button
+          type='submit'
+          className='h-9 md:h-11 px-5 md:px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium'
+        >
+          Search
+        </Button>
+      </div>
+    </form>
   )
 }
 
