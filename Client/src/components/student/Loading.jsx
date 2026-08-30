@@ -8,7 +8,7 @@ const Loading = () => {
 
   useEffect(() => {
     if(path) {
-      const timer = setTimeout(() => {navigate('/${path}')}, 5000)
+      const timer = setTimeout(() => {navigate(`/${path}`)}, 5000)
       return () => clearTimeout(timer)
     }
   },[])
