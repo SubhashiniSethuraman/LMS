@@ -8,10 +8,10 @@ import { ObjectId } from "mongodb";
 export const clerkWebhooks = async (req, res) => {
     try {
         const db = getDB();
-        // Verify Clerk Webhook
         const webhook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+        const payload = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
 
-        await webhook.verify(JSON.stringify(req.body), {
+        await webhook.verify(payload, {
             "svix-id": req.headers["svix-id"],
             "svix-timestamp": req.headers["svix-timestamp"],
             "svix-signature": req.headers["svix-signature"],
@@ -23,7 +23,7 @@ export const clerkWebhooks = async (req, res) => {
             case "user.created": {
                 const userData = {
                     _id: data.id,
-                    name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+                    name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "User",
                     email: data.email_addresses[0].email_address,
                     imageUrl: data.image_url,
                 };
@@ -32,6 +32,7 @@ export const clerkWebhooks = async (req, res) => {
                 const { error, value } = userSchema.validate(userData);
 
                 if (error) {
+                    console.error("User Creation Validation Error:", error.message);
                     return res.status(400).json({ success: false, message: error.message});
                 }
 
@@ -56,7 +57,7 @@ export const clerkWebhooks = async (req, res) => {
             case "user.updated": {
                 const userData = {
                     _id: data.id,
-                    name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+                    name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "User",
                     email: data.email_addresses[0].email_address,
                     imageUrl: data.image_url,
                 };
@@ -65,6 +66,7 @@ export const clerkWebhooks = async (req, res) => {
                 const { error, value } = userSchema.validate(userData);
 
                 if (error) {
+                    console.error("User Update Validation Error:", error.message);
                     return res.status(400).json({ success: false, message: error.message});
                 }
 
@@ -238,7 +240,7 @@ export const stripeWebhooks = async (request, response) => {
             const updatedResult = await db.collection("courses").updateOne(
                 { _id: courseData._id },
                 {
-                    $push: {
+                    $addToSet: {
                         enrolledStudents: userData._id
                     }
                 }
@@ -255,7 +257,7 @@ export const stripeWebhooks = async (request, response) => {
             await db.collection("users").updateOne(
                 { _id: userData._id },
                 {
-                    $push: {
+                    $addToSet: {
                         enrolledCourses: courseData._id
                     }
                 }

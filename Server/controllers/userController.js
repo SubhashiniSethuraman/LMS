@@ -49,7 +49,7 @@ export const userEnrolledCourses = async (req, res) => {
 
         res.json({ success: true, enrolledCourses: userData.enrolledCourses })
     } catch (error) {
-        res.json({ success: false, message: error.message })
+        res.status(500).json({ success: false, message: error.message })
     }
 }
 
@@ -66,7 +66,7 @@ export const purchaseCourse = async (req, res) => {
         const courseData = await db.collection("courses").findOne({_id: new ObjectId(courseId)})
 
         if(!userData || !courseData) {
-            return res.json({ success: false, message: 'Data not found' })
+            return res.status(404).json({ success: false, message: 'Data not found' })
         }
 
         const purchaseData = {
@@ -109,7 +109,7 @@ export const purchaseCourse = async (req, res) => {
 
         res.json({ success: true, session_url: session.url })
     } catch (error) {
-        res.json({ success: false, message: error.message })
+        res.status(500).json({ success: false, message: error.message })
     }
 }
 
@@ -119,6 +119,10 @@ export const updateUserCourseProgress = async (req, res) => {
         const db = getDB();
         const { userId } = req.auth();
         const { courseId, lectureId } =req.body;
+        if (!courseId || !lectureId) {
+            return res.status(400).json({ success: false, message: 'Missing courseId or lectureId' })
+        }
+
         const progressData = await db.collection("courseProgress").findOne({userId, courseId})
 
         if(progressData) {
@@ -152,7 +156,7 @@ export const updateUserCourseProgress = async (req, res) => {
 
         res.json({success: true, message: "Progress Updated"})
     } catch (error) {
-        res.json({success: false, message: error.message})
+        res.status(500).json({success: false, message: error.message})
     }
 }
 
@@ -162,12 +166,15 @@ export const getUserCourseProgress = async (req, res) => {
         const db = getDB();
         const { userId } = req.auth();
         const { courseId } =req.body;
+        if (!courseId) {
+            return res.status(400).json({ success: false, message: 'Missing courseId' })
+        }
         const progressData = await db.collection("courseProgress").findOne({userId, courseId})
 
         res.json({success: true, progressData})
 
     } catch (error) {
-        res.json({success: false, message: error.message})
+        res.status(500).json({success: false, message: error.message})
     }
 }
 
@@ -179,19 +186,20 @@ export const  addUserRating = async (req, res) => {
         const { courseId, rating } = req.body;
 
         if(!courseId || !userId || !rating || rating < 1 || rating > 5) {
-            return res.json({ success: false, message: 'Invalid Details' })
+            return res.status(400).json({ success: false, message: 'Invalid Details' })
         }
 
-        const course = await db.collection("courses").findOne({_id: courseId})
+        const course = await db.collection("courses").findOne({_id: new ObjectId(courseId)})
 
         if(!course) {
-            return res.json({ success: false, message: 'Course not found' })
+            return res.status(404).json({ success: false, message: 'Course not found' })
         }
 
         const user = await db.collection("users").findOne({_id: userId})
 
-        if(!user || !user.enrolledCourses.includes(courseId)) {
-            return res.json({ success: false, message: 'User has not purchased this course' })
+        const enrolledCoursesStrings = user && user.enrolledCourses ? user.enrolledCourses.map(id => id.toString()) : []
+        if(!user || !enrolledCoursesStrings.includes(courseId)) {
+            return res.status(400).json({ success: false, message: 'User has not purchased this course' })
         }
 
         const existingRatingIndex = course.courseRatings.findIndex(r => r.userId === userId)
@@ -227,6 +235,6 @@ export const  addUserRating = async (req, res) => {
         return res.json({success: true, message: 'Rating Added'})
 
     } catch (error) {
-        res.json({success: false, message: error.message})
+        res.status(500).json({success: false, message: error.message})
     }
 }

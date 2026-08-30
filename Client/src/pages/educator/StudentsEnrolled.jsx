@@ -23,7 +23,7 @@ const StudentsEnrolled = () => {
       })
 
       const data = await res.json()
-      if(data.status === 200) {
+      if(data.success) {
         setEnrolledStudents(data.enrolledStudents.reverse())
       } else {
         toast.error(data.message)

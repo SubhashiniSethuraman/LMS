@@ -110,7 +110,7 @@ export const getEducatorCourses = async (req, res) => {
 
         return res.json({success: true, courses})
     } catch (error) {
-        return res.json({success: false, message: error.message})
+        return res.status(500).json({success: false, message: error.message})
     }
 }
 
@@ -123,7 +123,7 @@ export const educatorDashboardData = async (req, res) => {
         const courses = await db.collection("courses").find({educator: userId}).toArray()
         const totalCourses = courses.length;
 
-        const courseIds = courses.map( course => course._id);
+        const courseIds = courses.map( course => course._id.toString());
 
         //Calculate total earnings from purchases
         const purchases = await db.collection("purchases").find({
@@ -131,7 +131,7 @@ export const educatorDashboardData = async (req, res) => {
             status: 'completed'
         }).toArray()
 
-        const totalEarnings = purchases.reduce((sum, purchase) => sum + purchase.amount, 0)
+        const totalEarnings = purchases.reduce((sum, purchase) => sum + Number(purchase.amount), 0)
 
         //Collect unique enrolled student IDs with their course titles
         const enrolledStudentsData = []
@@ -154,7 +154,7 @@ export const educatorDashboardData = async (req, res) => {
 
         res.json({success: true, dashboardData: { totalEarnings, enrolledStudentsData, totalCourses }})
     } catch (error) {
-        res.json({ success: false, message: error.message })
+        res.status(500).json({ success: false, message: error.message })
     }
 }
 
@@ -223,9 +223,14 @@ export const getEnrolledStudentsData = async (req, res) => {
                 $unwind: "$student"
             },
             {
+                $addFields: {
+                    courseIdObj: { $toObjectId: "$courseId" }
+                }
+            },
+            {
                 $lookup: {
                     from: "courses",
-                    localField: "courseId",
+                    localField: "courseIdObj",
                     foreignField: "_id",
                     as: "course"
                 }
@@ -249,7 +254,7 @@ export const getEnrolledStudentsData = async (req, res) => {
 
         res.json({ success: true, enrolledStudents })
     } catch (error) {
-        res.json({ success: false, message: error.message})
+        res.status(500).json({ success: false, message: error.message})
     }
 }
 

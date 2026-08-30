@@ -22,7 +22,7 @@ const CourseDetails = () => {
 
   const fetchCourseData = async () => {
     try {
-      const token = getToken()
+      const token = await getToken()
       const res = await fetch(`${URL}/course/${id}`,{
         method: 'GET',
         headers: {
@@ -38,7 +38,7 @@ const CourseDetails = () => {
         toast.error(data.message)
       }
     } catch (error) {
-      toast.error(data.error)
+      toast.error(error.message)
     }
   }
 

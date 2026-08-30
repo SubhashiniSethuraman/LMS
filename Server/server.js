@@ -22,7 +22,11 @@ app.use(cors())
 // Stripe webhook first
 app.post( "/stripe", express.raw({ type: "application/json" }), stripeWebhooks );
 
-app.use(express.json())
+app.use(express.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf;
+    }
+}))
 app.use(clerkMiddleware())
 
 //Routes

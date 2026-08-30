@@ -25,7 +25,7 @@ const Player = () => {
     enrolledCourses.map((course) => {
       if(course._id === courseId) {
         setCourseData(course)
-        course.courseRatings.map(() => {
+        course.courseRatings.map((item) => {
           if(item.userId === userData._id)
             setInitialRating(item.rating)
         })
@@ -54,7 +54,11 @@ const Player = () => {
         headers: {
           "Content-type": "application/json",
           "Authorization": `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({
+          courseId,
+          lectureId
+        })
       })
 
       const data = await res.json()
