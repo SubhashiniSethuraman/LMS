@@ -6,6 +6,16 @@ import { ObjectId } from "mongodb";
 
 // Manage Clerk Users with MongoDB
 export const clerkWebhooks = async (req, res) => {
+    console.log("========== CLERK WEBHOOK HIT ==========");
+    console.log("Headers:", {
+        "svix-id": req.headers["svix-id"],
+        "svix-timestamp": req.headers["svix-timestamp"],
+        "svix-signature": req.headers["svix-signature"],
+    });
+    console.log("CLERK_WEBHOOK_SECRET exists:", !!process.env.CLERK_WEBHOOK_SECRET);
+    console.log("req.rawBody exists:", !!req.rawBody, req.rawBody ? `length: ${req.rawBody.length}` : "N/A");
+    console.log("req.body exists:", !!req.body, typeof req.body === 'object' ? JSON.stringify(req.body).substring(0, 150) : req.body);
+
     try {
         const db = getDB();
         const webhook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
@@ -17,16 +27,21 @@ export const clerkWebhooks = async (req, res) => {
             "svix-signature": req.headers["svix-signature"],
         });
 
+        console.log("Svix Verification Success!");
+
         const { data, type } = req.body;
+        console.log("Event Type:", type);
 
         switch (type) {
             case "user.created": {
+                console.log("Processing user.created logic for ID:", data.id);
                 const userData = {
                     _id: data.id,
                     name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "User",
                     email: data.email_addresses[0].email_address,
                     imageUrl: data.image_url,
                 };
+                console.log("UserData constructed:", userData);
 
                 // Validate data
                 const { error, value } = userSchema.validate(userData);
@@ -37,30 +52,36 @@ export const clerkWebhooks = async (req, res) => {
                 }
 
                 // Check if user already exists
+                console.log("Checking if user exists in DB...");
                 const userExists = await db.collection("users").findOne({
                     _id: value._id,
                 });
+                console.log("User exists:", !!userExists);
 
                 if (userExists) {
                     return res.status(409).json({ success: false, message: "User already exists" });
                 }
 
-                await db.collection("users").insertOne({...value,
+                console.log("Inserting user into DB...");
+                const insertResult = await db.collection("users").insertOne({...value,
                     enrolledCourses: [],
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });
+                console.log("User insertion successful. Result:", insertResult);
 
                 return res.status(201).json({ success: true, message: "User created successfully" });
             }
 
             case "user.updated": {
+                console.log("Processing user.updated logic for ID:", data.id);
                 const userData = {
                     _id: data.id,
                     name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "User",
                     email: data.email_addresses[0].email_address,
                     imageUrl: data.image_url,
                 };
+                console.log("UserData constructed for update:", userData);
 
                 // Validate data
                 const { error, value } = userSchema.validate(userData);
@@ -70,6 +91,7 @@ export const clerkWebhooks = async (req, res) => {
                     return res.status(400).json({ success: false, message: error.message});
                 }
 
+                console.log("Updating user in DB...");
                 const result = await db.collection("users").updateOne(
                     { _id: data.id },
                     { $set: {
@@ -79,8 +101,10 @@ export const clerkWebhooks = async (req, res) => {
                         updatedAt: new Date()
                     }}
                 );
+                console.log("User update result:", result);
 
                 if (result.matchedCount === 0) {
+                    console.warn("User update failed: User not found in DB");
                     return res.status(404).json({ success: false, message: "User not found" });
                 }
 
@@ -88,11 +112,14 @@ export const clerkWebhooks = async (req, res) => {
             }
 
             case "user.deleted": {
+                console.log("Processing user.deleted logic for ID:", data.id);
                 const result = await db.collection("users").deleteOne({
                     _id: data.id,
                 });
+                console.log("User delete result:", result);
 
                 if (result.deletedCount === 0) {
+                    console.warn("User delete failed: User not found in DB");
                     return res.status(404).json({ success: false, message: "User not found" });
                 }
 
